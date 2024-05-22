@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Copiar para Área de Transferência</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 400px;
+            margin: 50px auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        .field {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        input[type="text"] {
+            width: calc(100% - 20px); /* Ajuste para a largura do campo */
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+        }
+
+        .copy-text {
+            width: 100%;
+            height: 120px;
+            padding: 0px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+
+            
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="field">
+            <label for="nome"> Fornecedor:</label>
+            <input type="text" id="nome" placeholder="Digite o nome do Fornecedor">
+        </div>
+        
+
+        <div class="field">
+            <label for="CNPJ">CNPJ:</label>
+            <input type="text" id="CNPJ" placeholder="Digite o CNPJ">
+        </div>
+
+        <div class="field">
+            <label for="Valor_Unit">Valor Unit:</label>
+            <input type="text" id="Valor_Unit" placeholder="Digite o Valor Unitário">
+        </div>
+
+       
+        <div class="field">
+            <label for="Qtd">Qtd:</label>
+            <input type="text" id="Qtd" placeholder="Digite a Quantidade">
+        </div>
+
+        <div class="field">
+            <label for="CC">CC:</label>
+            <input type="text" id="CC" placeholder="Digite o CC">
+        </div>
+
+        <div class="field">
+            <label for="Operacao">Operacao:</label>
+            <input type="text" id="Operacao" placeholder="Digite a Operação">
+        </div>
+
+        <textarea class="copy-text" ></textarea>
+        <button onclick="copyText()">Copiar para Área de Transferência</button>
+    </div>
+
+    <script>
+        function copyText() {
+            var nome = document.getElementById('nome').value;
+            var CNPJ = document.getElementById('CNPJ').value;
+            var Valor_Unit = document.getElementById('Valor_Unit').value;
+            var Qtd = document.getElementById('Qtd').value;
+            var Valor_Total = document.getElementById('Valor_Unit').value * document.getElementById('Qtd').value ;
+            var CC = document.getElementById('CC').value;
+            var Operacao = document.getElementById('Operacao').value;
+            var texto = "Nome do Cliente: " + nome + "\nCNPJ :  " + CNPJ + "\nValor Un: R$ " + Valor_Unit + "\nQtd: " + Qtd + "\nValor Total: R$" + Valor_Total + "\nCC: " + CC + "\nOperação: " + Operacao; 
+            
+            var copyText = document.querySelector('.copy-text');
+            copyText.value = texto;
+            copyText.select();
+            document.execCommand('copy');
+        }
+    </script>
+</body>
+</html>
