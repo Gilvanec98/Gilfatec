@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Copiar para Área de Transferência</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 400px;
+            margin: 50px auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #f9f9f9; /* Cor de fundo padrão */
+        }
+
+        .field {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        input[type="text"] {
+            width: calc(100% - 20px); /* Ajuste para a largura do campo */
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+        }
+
+        .copy-text {
+            width: calc(100% - 20px);
+            height: 120px;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            margin-bottom: 10px;
+        }
+
+        .increment-button {
+            display: inline-block;
+            padding: 8px 12px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            margin-right: 5px; /* Alterado de margin-left para margin-right */
+        }
+
+        .increment-button:hover {
+            background-color: #0056b3;
+        }
+
+        .total-value {
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        /* Estilos para o modo escuro */
+        body.dark-mode {
+            background-color: #222; /* Cor de fundo do modo escuro */
+            color: #fff; /* Cor do texto no modo escuro */
+        }
+
+        .container.dark-mode {
+            border-color: #444; /* Cor da borda do container no modo escuro */
+            background-color: #333; /* Cor de fundo do container no modo escuro */
+        }
+
+        input[type="text"].dark-mode {
+            background-color: #444; /* Cor de fundo dos campos de texto no modo escuro */
+            color: #fff; /* Cor do texto nos campos de texto no modo escuro */
+            border-color: #666; /* Cor da borda dos campos de texto no modo escuro */
+        }
+
+        .copy-text.dark-mode {
+            background-color: #444; /* Cor de fundo da área de texto no modo escuro */
+            color: #fff; /* Cor do texto na área de texto no modo escuro */
+            border-color: #666; /* Cor da borda da área de texto no modo escuro */
+        }
+
+        .increment-button.dark-mode {
+            background-color: #004080; /* Cor do botão no modo escuro */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="field">
+            <label for="nome"> Fornecedor:</label>
+            <input type="text" id="nome" placeholder="Digite o nome do Fornecedor">
+        </div>
+        
+        <div class="field">
+            <label for="CNPJ">CNPJ:</label>
+            <input type="text" id="CNPJ" placeholder="Digite o CNPJ">
+        </div>
+
+        <div class="field">
+            <label for="Valor_Unit">Valor Unit:</label>
+            <input type="text" id="Valor_Unit" placeholder="Digite o Valor Unitário">
+        </div>
+
+        <div class="field">
+            <label for="Qtd">Qtd:</label>
+            <input type="text" id="Qtd" placeholder="Digite a Quantidade">
+            <button class="increment-button" onclick="decrementQuantity()">-</button> <!-- Alterado -->
+            <button class="increment-button" onclick="incrementQuantity()">+</button> <!-- Alterado -->
+        </div>
+
+        <div class="field">
+            <label for="CC">CC:</label>
+            <input type="text" id="CC" placeholder="Digite o CC">
+        </div>
+
+        <div class="field">
+            <label for="Operacao">Operacao:</label>
+            <input type="text" id="Operacao" placeholder="Digite a Operação">
+        </div>
+
+        <div class="field">
+            <label for="Total_Value">Valor Total:</label>
+            <input type="text" id="Total_Value" class="total-value" readonly>
+        </div>
+
+        <textarea class="copy-text"></textarea>
+
+        <div class="field">
+            <label for="format">Formato de Copia:</label>
+            <select id="format" onchange="applyFormat()">
+                <option value="uppercase">Tudo em Maiúsculas</option>
+                <option value="lowercase">Tudo em Minúsculas</option>
+                <option value="capitalize">Primeira Letra em Maiúscula</option>
+            </select>
+        </div>
+
+        <div class="field">
+            <label for="copy_format">Formato de Letra para Cópia:</label>
+            <select id="copy_format">
+                <option value="uppercase">Tudo em Maiúsculas</option>
+                <option value="lowercase">Tudo em Minúsculas</option>
+                <option value="capitalize">Primeira Letra em Maiúscula</option>
+            </select>
+        </div>
+
+        <button onclick="copyText()">Copiar para Área de Transferência</button>
+        <button onclick="clearFields()">Limpar Campos</button> <!-- Botão para limpar os campos -->
+        <button onclick="toggleDarkMode()">Modo Escuro</button> <!-- Botão para alternar entre o modo claro e o modo escuro -->
+    </div>
+
+    <script>
+        // Função para formatar o CNPJ
+        function formatCNPJ(cnpj) {
+            cnpj = cnpj.replace(/\D/g, ''); // Remove caracteres não numéricos
+            cnpj = cnpj.replace(/^(\d{2})(\d)/, '$1.$2'); // Adiciona ponto após os dois primeiros dígitos
+            cnpj = cnpj.replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3'); // Adiciona ponto após os próximos três dígitos
+            cnpj = cnpj.replace(/\.(\d{3})(\d)/, '.$1/$2'); // Adiciona barra após os próximos três dígitos
+            cnpj = cnpj.replace(/(\d{4})(\d)/, '$1-$2'); // Adiciona hífen após os quatro últimos dígitos
+            return cnpj;
+        }
+
+        // Função para copiar texto para a área de transferência
+        function copyText() {
+            var nome = document.getElementById('nome').value;
+            var CNPJ = document.getElementById('CNPJ').value;
+            var Valor_Unit = document.getElementById('Valor_Unit').value;
+            var Qtd = document.getElementById('Qtd').value;
+            var Total_Value = document.getElementById('Total_Value').value;
+            var CC = document.getElementById('CC').value;
+            var Operacao = document.getElementById('Operacao').value;
+
+            var copyFormat = document.getElementById('copy_format').value;
+
+            // Obtendo os textos estáticos
+            var nomeLabel = document.querySelector('label[for="nome"]').textContent.trim();
+            var cnpjLabel = document.querySelector('label[for="CNPJ"]').textContent.trim();
+            var valorUnitLabel = document.querySelector('label[for="Valor_Unit"]').textContent.trim();
+            var qtdLabel = document.querySelector('label[for="Qtd"]').textContent.trim();
+            var totalValueLabel = document.querySelector('label[for="Total_Value"]').textContent.trim();
+            var ccLabel = document.querySelector('label[for="CC"]').textContent.trim();
+            var operacaoLabel = document.querySelector('label[for="Operacao"]').textContent.trim();
+
+            // Formatando os campos com base na opção selecionada
+            if (copyFormat === 'uppercase') {
+                nome = nome.toUpperCase();
+                CNPJ = CNPJ.toUpperCase();
+                Valor_Unit = Valor_Unit.toUpperCase();
+                Qtd = Qtd.toUpperCase();
+                Total_Value = Total_Value.toUpperCase();
+                CC = CC.toUpperCase();
+                Operacao = Operacao.toUpperCase();
+                
+                nomeLabel = nomeLabel.toUpperCase();
+                cnpjLabel = cnpjLabel.toUpperCase();
+                valorUnitLabel = valorUnitLabel.toUpperCase();
+                qtdLabel = qtdLabel.toUpperCase();
+                totalValueLabel = totalValueLabel.toUpperCase();
+                ccLabel = ccLabel.toUpperCase();
+                operacaoLabel = operacaoLabel.toUpperCase();
+            } else if (copyFormat === 'lowercase') {
+                nome = nome.toLowerCase();
+                CNPJ = CNPJ.toLowerCase();
+                Valor_Unit = Valor_Unit.toLowerCase();
+                Qtd = Qtd.toLowerCase();
+                Total_Value = Total_Value.toLowerCase();
+                CC = CC.toLowerCase();
+                Operacao = Operacao.toLowerCase();
+                
+                nomeLabel = nomeLabel.toLowerCase();
+                cnpjLabel = cnpjLabel.toLowerCase();
+                valorUnitLabel = valorUnitLabel.toLowerCase();
+                qtdLabel = qtdLabel.toLowerCase();
+                totalValueLabel = totalValueLabel.toLowerCase();
+                ccLabel = ccLabel.toLowerCase();
+                operacaoLabel = operacaoLabel.toLowerCase();
+            } else if (copyFormat === 'capitalize') {
+                nome = capitalizeFirstLetter(nome);
+                CNPJ = capitalizeFirstLetter(CNPJ);
+                Valor_Unit = capitalizeFirstLetter(Valor_Unit);
+                Qtd = capitalizeFirstLetter(Qtd);
+                Total_Value = capitalizeFirstLetter(Total_Value);
+                CC = capitalizeFirstLetter(CC);
+                Operacao = capitalizeFirstLetter(Operacao);
+                
+                nomeLabel = capitalizeFirstLetter(nomeLabel.toLowerCase());
+                cnpjLabel = capitalizeFirstLetter(cnpjLabel.toLowerCase());
+                valorUnitLabel = capitalizeFirstLetter(valorUnitLabel.toLowerCase());
+                qtdLabel = capitalizeFirstLetter(qtdLabel.toLowerCase());
+                totalValueLabel = capitalizeFirstLetter(totalValueLabel.toLowerCase());
+                ccLabel = capitalizeFirstLetter(ccLabel.toLowerCase());
+                operacaoLabel = capitalizeFirstLetter(operacaoLabel.toLowerCase());
+            }
+
+            var texto = nomeLabel + ": " + nome + "\n" +
+                        cnpjLabel + ": " + CNPJ + "\n" +
+                        valorUnitLabel + ": R$ " + Valor_Unit + "\n" +
+                        qtdLabel + ": " + Qtd + "\n" +
+                        totalValueLabel + ": R$ " + Total_Value + "\n" +
+                        ccLabel + ": " + CC + "\n" +
+                        operacaoLabel + ": " + Operacao;
+
+            var copyText = document.querySelector('.copy-text');
+            copyText.value = texto;
+            copyText.select();
+            document.execCommand('copy');
+            alert("Texto copiado para a área de transferência!");
+        }
+
+        // Função para capitalizar a primeira letra de uma string
+        function capitalizeFirstLetter(string) {
+            return string.charAt(0).toUpperCase() + string.slice(1);
+        }
+
+        // Função para aplicar o formato selecionado aos campos
+        function applyFormat() {
+            var format = document.getElementById('format').value;
+            var inputs = document.querySelectorAll('input[type="text"]');
+            inputs.forEach(function(input) {
+                if (format === 'uppercase') {
+                    input.value = input.value.toUpperCase();
+                } else if (format === 'lowercase') {
+                    input.value = input.value.toLowerCase();
+                } else if (format === 'capitalize') {
+                    input.value = capitalizeFirstLetter(input.value.toLowerCase());
+                }
+            });
+        }
+
+        // Função para incrementar a quantidade
+        function incrementQuantity() {
+            var qtdInput = document.getElementById('Qtd');
+            var currentQuantity = parseInt(qtdInput.value);
+            if (isNaN(currentQuantity) || currentQuantity === 0) {
+                qtdInput.value = 1;
+            } else {
+                qtdInput.value = currentQuantity + 1;
+            }
+            updateTotal(); // Atualiza o valor total ao incrementar
+        }
+
+        // Função para decrementar a quantidade
+        function decrementQuantity() {
+            var qtdInput = document.getElementById('Qtd');
+            var currentQuantity = parseInt(qtdInput.value);
+            if (!isNaN(currentQuantity) && currentQuantity > 0) {
+                qtdInput.value = currentQuantity - 1;
+                updateTotal(); // Atualiza o valor total ao decrementar
+            }
+        }
+
+        // Função para limpar os campos preenchidos
+        function clearFields() {
+            document.getElementById('nome').value = '';
+            document.getElementById('CNPJ').value = '';
+            document.getElementById('Valor_Unit').value = '';
+            document.getElementById('Qtd').value = '';
+            document.getElementById('CC').value = '';
+            document.getElementById('Operacao').value = '';
+            document.getElementById('Total_Value').value = ''; // Limpa também o campo do valor total
+            document.querySelector('.copy-text').value = ''; // Limpa o campo de cópia
+        }
+
+        // Função para atualizar o valor total
+        function updateTotal() {
+            var valorUnit = parseFloat(document.getElementById('Valor_Unit').value);
+            var qtd = parseInt(document.getElementById('Qtd').value);
+            if (!isNaN(valorUnit) && !isNaN(qtd)) {
+                var total = valorUnit * qtd;
+                document.getElementById('Total_Value').value = total.toFixed(2); // Mostra o valor total com duas casas decimais
+            }
+        }
+
+        // Função para alternar entre o modo claro e o modo escuro
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            document.querySelectorAll('input[type="text"], textarea, .container, .increment-button').forEach(element => {
+                element.classList.toggle('dark-mode');
+            });
+        }
+
+        // Adiciona evento de escuta para formatar o CNPJ enquanto o usuário digita
+        document.getElementById('CNPJ').addEventListener('input', function(event) {
+            var input = event.target;
+            input.value = formatCNPJ(input.value);
+        });
+
+        // Aplicar formato inicialmente ao carregar a página
+        applyFormat();
+    </script>
+</body>
+</html>
