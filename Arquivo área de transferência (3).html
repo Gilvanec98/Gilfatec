@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulário de Dados</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .form-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 300px;
+            position: relative;
+        }
+
+        label {
+            font-weight: bold;
+        }
+
+        input[type="text"], input[type="number"] {
+            padding: 8px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 1rem;
+            cursor: pointer;
+            margin-top: 10px;
+            border: none;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .copied-text {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #e0e0e0;
+            border: 1px solid #ccc;
+            white-space: pre-wrap; /* Preserve line breaks */
+        }
+
+        .quantity-container {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .theme-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .suggestions {
+            border: 1px solid #ccc;
+            max-height: 150px;
+            overflow-y: auto;
+            position: absolute;
+            width: calc(100% - 16px); /* Adjust width based on padding and border */
+            background-color: #fff;
+            z-index: 1000;
+            margin-top: 2px;
+        }
+
+        .suggestion {
+            padding: 8px;
+            cursor: pointer;
+        }
+
+        .suggestion:hover {
+            background-color: #ddd;
+        }
+
+        /* Tema Claro */
+        .light-theme {
+            background-color: #f0f0f0;
+            color: #000;
+        }
+
+        .light-theme input[type="text"], .light-theme input[type="number"] {
+            background-color: #fff;
+            color: #000;
+        }
+
+        .light-theme button {
+            background-color: #fff;
+            color: #000;
+            border: 1px solid #ccc;
+        }
+
+        .light-theme .copied-text {
+            background-color: #e0e0e0;
+            border: 1px solid #ccc;
+        }
+
+        /* Tema Escuro */
+        .dark-theme {
+            background-color: #333;
+            color: #fff;
+        }
+
+        .dark-theme input[type="text"], .dark-theme input[type="number"] {
+            background-color: #555;
+            color: #fff;
+            border: 1px solid #777;
+        }
+
+        .dark-theme button {
+            background-color: #555;
+            color: #fff;
+            border: 1px solid #777;
+        }
+
+        .dark-theme .copied-text {
+            background-color: #555;
+            border: 1px solid #777;
+        }
+
+        .dark-theme .suggestions {
+            background-color: #555;
+            color: #fff;
+        }
+
+        .dark-theme .suggestion:hover {
+            background-color: #777;
+        }
+
+        /* Tema Cinza */
+        .gray-theme {
+            background-color: #888;
+            color: #000;
+        }
+
+        .gray-theme input[type="text"], .gray-theme input[type="number"] {
+            background-color: #bbb;
+            color: #000;
+            border: 1px solid #999;
+        }
+
+        .gray-theme button {
+            background-color: #bbb;
+            color: #000;
+            border: 1px solid #999;
+        }
+
+        .gray-theme .copied-text {
+            background-color: #bbb;
+            border: 1px solid #999;
+        }
+
+        .gray-theme .suggestions {
+            background-color: #bbb;
+            color: #000;
+        }
+
+        .gray-theme .suggestion:hover {
+            background-color: #999;
+        }
+        
+        
+        
+        
+        .page2 {
+            background-color: #333;
+            color: white;
+        }
+        .ascii-time {
+            font-size: 20px;
+        }
+        
+        
+        
+        
+        
+    </style>
+</head>
+
+    <div class="theme-buttons">
+        <button onclick="setTheme('light-theme')">Tema Claro</button>
+        <button onclick="setTheme('dark-theme')">Tema Escuro</button>
+        <button onclick="setTheme('gray-theme')">Tema Cinza</button>
+    </div>
+    
+<body class="dark-theme">
+    <div class="form-container">
+        <h1>Formulário de Dados</h1>
+        <div class="quantity-container">
+            <label for="quantity">Quantidade:</label>
+            <input type="number" id="quantity" value="01" min="0" max="99" step="1" oninput="formatQuantity()">
+            <button onclick="incrementQuantity()">+</button>
+            <button onclick="decrementQuantity()">-</button>
+        </div>
+
+        <label for="name">Nome:</label>
+        <input type="text" id="name">
+
+        <label for="textob">Texto:</label>
+        <div style="position: relative;">
+            <input type="text" id="textob" oninput="showSuggestions(this.value)">
+            <div class="suggestions" id="suggestions"></div>
+        </div>
+
+        <label for="resumo">Resumo:</label>
+        <input type="text" id="resumo">
+
+        <button onclick="copyToClipboard()">Copiar para Área de Transferência</button>
+        <button onclick="clearFields()">Limpar Campos</button>
+        <button onclick="clearFieldsKeepFirstWord()">Apagar mas Manter Primeira Palavra</button>
+    </div>
+
+    
+    <div class="copied-text" id="copiedText"></div>
+
+
+    <script>
+        const books = [
+            "Gênesis", "Êxodo", "Levítico", "Números", "Deuteronômio",
+            "Josué", "Juízes", "Rute", "1Samuel", "2Samuel",
+            "1Reis", "2Reis", "1Crônicas", "2Crônicas", "Esdras",
+            "Neemias", "Ester", "Jó", "Salmos", "Provérbios",
+            "Eclesiastes", "Cântico de Salomão", "Isaías", "Jeremias", "Lamentações",
+            "Ezequiel", "Daniel", "Oséias", "Joel", "Amós",
+            "Obadias", "Jonas", "Miquéias", "Naum", "Habacuque",
+            "Sofonias", "Ageu", "Zacarias", "Malaquias", "Mateus",
+            "Marcos", "Lucas", "João", "Atos", "Romanos",
+            "1Coríntios", "2Coríntios", "Gálatas", "Efésios", "Filipenses",
+            "Colossenses", "1Tessalonicenses", "2Tessalonicenses", "1Timóteo", "2Timóteo",
+            "Tito", "Filemom", "Hebreus", "Tiago", "1Pedro",
+            "2Pedro", "1João", "2João", "3João", "Judas", "Apocalipse"
+        ];
+
+        function formatQuantity() {
+            const quantity = document.getElementById('quantity');
+            quantity.value = String(quantity.value).padStart(2, '0');
+        }
+
+        function incrementQuantity() {
+            const quantity = document.getElementById('quantity');
+            if (quantity.value < 99) {
+                quantity.value = String(Number(quantity.value) + 1).padStart(2, '0');
+            }
+        }
+
+        function decrementQuantity() {
+            const quantity = document.getElementById('quantity');
+            if (quantity.value > 0) {
+                quantity.value = String(Number(quantity.value) - 1).padStart(2, '0');
+            }
+        }
+
+        function copyToClipboard() {
+            const quantity = document.getElementById('quantity').value;
+            const name = document.getElementById('name').value.trim();
+            const textob = document.getElementById('textob').value.trim();
+            const resumo = document.getElementById('resumo').value.trim();
+
+            let dataToCopy = `${quantity} - `;
+
+            if (name) {
+                dataToCopy += `${name} - `;
+            }
+            if (textob) {
+                dataToCopy += `${textob} - `;
+            }
+            if (resumo) {
+                dataToCopy += `${resumo}`;
+            }
+
+            const copiedTextDiv = document.getElementById('copiedText');
+            copiedTextDiv.textContent = dataToCopy || 'Nenhum dado para copiar';
+
+            
+                
+            if (dataToCopy) {
+                const textarea = document.createElement('textarea');
+                textarea.value = dataToCopy;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                
+            } else {
+                alert('Preencha pelo menos um campo para copiar.');
+            }
+        }
+
+        function clearFields() {
+            document.getElementById('name').value = '';
+            document.getElementById('textob').value = '';
+            document.getElementById('resumo').value = '';
+            document.getElementById('copiedText').textContent = '';
+        }
+
+        function clearFieldsKeepFirstWord() {
+            const textob = document.getElementById('textob').value.trim();
+
+            document.getElementById('quantity').value = String(Number(quantity.value) + 1).padStart(2, '0');
+            document.getElementById('name').value = '';
+            document.getElementById('textob').value = keepFirstWord(textob);
+            document.getElementById('resumo').value = '';
+            document.getElementById('copiedText').textContent = '';
+        }
+
+        function keepFirstWord(text) {
+            return text ? text.split(' ')[0] + ' ' : '';
+        }
+
+        function setTheme(themeName) {
+            document.body.className = themeName;
+        }
+
+        function showSuggestions(value) {
+            const suggestions = document.getElementById('suggestions');
+            suggestions.innerHTML = '';
+
+            if (value) {
+                const filteredBooks = books.filter(book => book.toLowerCase().includes(value.toLowerCase()));
+                filteredBooks.forEach(book => {
+                    const div = document.createElement('div');
+                    div.classList.add('suggestion');
+                    div.textContent = book;
+                    div.onclick = () => selectSuggestion(book);
+                    suggestions.appendChild(div);
+                });
+            }
+        }
+
+        function selectSuggestion(book) {
+            const textob = document.getElementById('textob');
+            textob.value = book + ' ';
+            document.getElementById('suggestions').innerHTML = '';
+        }
+
+
+
+
+
+
+
+
+ // Código JavaScript fornecido anteriormente para exportar e importar arquivos...
+
+        function getFormattedDateTime() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            return `${year}${month}${day} ${hours}${minutes}${seconds}`;
+        }
+
+        function updateASCIITime() {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+
+            // Exemplo de representação ASCII para o tempo
+            const asciiTime = `
+ _  _     _  _     _  _ 
+|_||_ |_||_ |_ |_||_ |_ 
+| ||_||_||_||_||_||_||_|
+            `.replace(/_/g, " ").replace(/\|/g, " ");
+            document.getElementById('asciiTime').textContent = `${hours}:${minutes}:${seconds}\n${asciiTime}`;
+        }
+
+        // Atualiza o tempo a cada segundo
+        setInterval(updateASCIITime, 1000);
+
+        let startX;
+
+        document.addEventListener('touchstart', function(event) {
+            startX = event.touches[0].pageX;
+        }, false);
+
+        document.addEventListener('touchmove', function(event) {
+            const diffX = event.touches[0].pageX - startX;
+            const container = document.getElementById('container');
+
+            if (diffX < -50) { // Deslizou para a esquerda
+                container.style.transform = 'translateX(-50%)';
+            } else if (diffX > 50) { // Deslizou para a direita
+                container.style.transform = 'translateX(0)';
+            }
+        }, false);
+        
+
+    </script>
+</body>
+</html>>
+</body>
+</html>>

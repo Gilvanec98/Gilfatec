@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formul谩rio de Dados</title>  
+  
+   <style>
+        :root {
+            --bg-color: #f0f0f0;
+            --text-color: #000;
+            --input-bg: #fff;
+            --copied-bg: #e0e0e0;
+        }
+
+        .dark-theme {
+            --bg-color: #333;
+            --text-color: #fff;
+            --input-bg: #444;
+            --copied-bg: #555;
+        }
+
+        .gray-theme {
+            --bg-color: #999;
+            --text-color: #000;
+            --input-bg: #bbb;
+            --copied-bg: #ccc;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            margin: 10;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+
+        .header {
+            position: sticky;
+            top: 0;
+            background-color: var(--bg-color);
+            padding: 10px;
+            z-index: 1000;
+            display: flex;
+            gap: 10px;
+        }
+
+        .form-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 380px;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        label {
+            font-weight: bold;
+        }
+
+        input[type="text"], input[type="number"] {
+            padding: 8px;
+            width: 100%;
+            box-sizing: border-box;
+            background-color: var(--input-bg);
+            color: var(--text-color);
+        }
+
+        input[type="text"].numeric, input[type="number"].numeric {
+            -moz-appearance: textfield;
+        }
+
+        input[type="text"].numeric::-webkit-outer-spin-button,
+        input[type="text"].numeric::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .quantity-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .quantity-container button {
+            padding: 5px;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 1rem;
+            cursor: pointer;
+            margin-top: 10px;
+            background-color: #007bff;
+            color: #fff;
+            border: 1px solid #007bff;
+        }
+
+        .theme-button {
+            padding: 5px 10px;
+            font-size: 1rem;
+            cursor: pointer;
+            margin: 5px;
+            background-color: #007bff;
+            color: #fff;
+            border: 1px solid #007bff;
+        }
+
+        .copied-text {
+            margin-top: 20px;
+            padding: 5px;
+            background-color: var(--copied-bg);
+            border: 1px solid #ccc;
+            white-space: pre-wrap; /* Preserve line breaks */
+            padding-bottom: 20px; /* Ajuste conforme necess锟斤拷rio */
+        }
+
+        .suggestion {
+            background: var(--input-bg);
+            border: 1px solid #ccc;
+            padding: 8px;
+            cursor: pointer;
+        }
+
+        .suggestion:hover {
+            background: #ddd;
+        }
+
+        .error-message {
+            color: red;
+            font-size: 0.8rem;
+            display: none;
+        }
+
+        .success-message {
+            color: green;
+            font-size: 0.8rem;
+            display: none;
+        }
+
+        .error .error-message {
+            display: block;
+        }
+
+        .valid .success-message {
+            display: block;
+        }
+
+        @media (max-width: 600px) {
+            .theme-button {
+                font-size: 0.8rem; /* Ajustar o tamanho da fonte para telas menores */
+                padding: 4px 8px;
+            }
+
+            button {
+                font-size: 0.8rem; /* Ajustar o tamanho da fonte para telas menores */
+                padding: 8px 16px;
+            }
+        }
+    </style>
+</head>
+<body class="dark-theme">
+    
+    <div>
+        <button class="theme-button" onclick="setTheme('dark')">Tema Escuro</button>
+        <button class="theme-button" onclick="setTheme('light')">Tema Claro</button>
+        <button class="theme-button" onclick="setTheme('gray')">Tema Cinza</button>
+    </div>
+    <H2>Narrativa para SC</H2>
+    <div class="form-container">
+        <label for="fornecedor">Fornecedor:</label>
+        <input type="text" id="fornecedor">
+
+        <label for="cnpj">CNPJ:</label>
+        <input type="text" id="cnpj" placeholder="00.000.000/0000-00" inputmode="numeric" oninput="formatCNPJ(this)">
+        <span class="error-message" id="cnpj-error">CNPJ inv谩lido</span>
+        <span class="success-message" id="cnpj-valid">CNPJ v谩lido</span>
+
+        <label for="valor_unit">Valor Unit谩rio:</label>
+        <input type="text" id="valor_unit" class="numeric" inputmode="numeric" oninput="calculateTotal()" placeholder="0,00" step="0.01">
+
+        <label for="qtd">Quantidade:</label>
+        <div class="quantity-container">
+            <input type="number" id="qtd" class="numeric" oninput="calculateTotal()" step="0.01" value="">
+            <button onclick="changeQuantity(-1)">-</button>
+            <button onclick="changeQuantity(1)">+</button>
+        </div>
+
+        <label for="valor_total">Valor Total:</label>
+        <input type="text" id="valor_total" readonly>
+
+        <label for="cc">Centro de Custo (CC):</label>
+        <input type="text" id="cc" oninput="showSuggestions(this.value)">
+        <div id="suggestions" class="suggestions-container"></div>
+
+        <label for="item">Item:</label>
+        <input type="text" id="item">
+
+
+ <label for="textFormat">Formato do Texto Copiado:</label>
+        <select id="textFormat">
+            <option value="default">Padr茫o</option>
+            <option value="uppercase">Tudo Mai煤sculas</option>
+            <option value="lowercase">Tudo Min煤sculas</option>
+            <option value="capitalize">Primeira Letra de Cada Palavra em Mai煤sculas</option>
+        </select>
+        
+        
+        <button onclick="copyToClipboard()">Copiar para 脕rea de Transfer锚ncia</button>
+        <button onclick="clearFields()">Limpar Campos</button>
+        <button onclick="clearHistory()">Limpar Hist贸rico</button>
+        <button onclick="exportToTxt()">Exportar Hist贸rico  para TXT</button>
+<button onclick="exportToXml()">Exportar Hist贸rico  para XML</button>
+<button onclick="importTxt()">Importar TXT</button>
+<button onclick="importXml()">Importar XML</button>
+<input type="file" id="fileInput" style="display:none" accept=".txt,.xml" onchange="handleFileSelect(event)">
+
+        <textarea class="copy-text" ></textarea>
+        
+    </div>
+    <h5>Hist贸rico</h5>
+    <div class="copied-text" id="copiedText"></div>
+    <script>
+        const lccs = [
+            "LOCA脟 - Departamento de Loca莽茫o - Fabiana", "00307 - Ceva - Antonio Alberto", "00309 - Klabin - Roberto Nunes"
+        ];
+
+        function formatCNPJ(cnpjInput) {
+            let cnpj = cnpjInput.value.replace(/\D/g, '');
+            if (cnpj.length > 14) cnpj = cnpj.slice(0, 14);
+            cnpj = cnpj.replace(/^(\d{2})(\d)/, "$1.$2");
+            cnpj = cnpj.replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3");
+            cnpj = cnpj.replace(/\.(\d{3})(\d)/, ".$1/$2");
+            cnpj = cnpj.replace(/(\d{4})(\d)/, "$1-$2");
+            cnpjInput.value = cnpj;
+
+            const isValid = validateCNPJ(cnpj);
+            const errorElement = document.getElementById('cnpj-error');
+            const validElement = document.getElementById('cnpj-valid');
+            
+            if (isValid) {
+                errorElement.style.display = 'none';
+                validElement.style.display = 'block';
+            } else {
+                errorElement.style.display = 'block';
+                validElement.style.display = 'none';
+            }
+        }
+
+        function validateCNPJ(cnpj) {
+            cnpj = cnpj.replace(/[^\d]+/g, '');
+
+            if (cnpj.length !== 14) {
+                return false;
+            }
+
+            const invalidCNPJs = [
+                '00000000000000', '11111111111111', '22222222222222',
+                '33333333333333', '44444444444444', '55555555555555',
+                '66666666666666', '77777777777777', '88888888888888',
+                '99999999999999'
+            ];
+
+            if (invalidCNPJs.includes(cnpj)) {
+                return false;
+            }
+
+            const validateDigits = (base, factors) => {
+                let sum = 0;
+                for (let i = 0; i < base.length; i++) {
+                    sum += parseInt(base.charAt(i)) * factors[i];
+                }
+                let result = sum % 11 < 2 ? 0 : 11 - (sum % 11);
+                return result;
+            };
+
+
+const base = cnpj.substring(0, 12);
+            const digit1 = validateDigits(base, [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]);
+            const digit2 = validateDigits(base + digit1, [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]);
+
+            if (digit1 != cnpj.charAt(12) || digit2 != cnpj.charAt(13)) {
+                return false;
+            }
+
+            return true;
+        }
+
+        function calculateTotal() {
+            const valorUnitInput = document.getElementById('valor_unit').value.replace(',', '.');
+            const qtdInput = document.getElementById('qtd').value.replace(',', '.');
+            const valorUnit = parseFloat(valorUnitInput);
+            const qtd = parseFloat(qtdInput);
+            if (!isNaN(valorUnit) && !isNaN(qtd)) {
+                const valorTotal = valorUnit * qtd;
+                document.getElementById('valor_total').value = valorTotal.toFixed(2).replace('.', ',');
+            } else {
+                document.getElementById('valor_total').value = '';
+            }
+        }
+
+        function changeQuantity(amount) {
+            const qtdInput = document.getElementById('qtd');
+            let currentQuantity = parseFloat(qtdInput.value);
+            if (isNaN(currentQuantity)) {
+                currentQuantity = 0;
+            }
+            const newQuantity = currentQuantity + amount;
+            if (newQuantity >= 0) {
+                qtdInput.value = newQuantity.toFixed(2);
+                calculateTotal();
+            }
+        }
+
+        
+        function copyToClipboard() {
+    const fornecedor = document.getElementById('fornecedor').value.trim();
+    const cnpj = document.getElementById('cnpj').value.trim();
+    const valorUnit = document.getElementById('valor_unit').value.trim();
+    const qtd = document.getElementById('qtd').value.trim();
+    const valorTotal = document.getElementById('valor_total').value.trim();
+    const cc = document.getElementById('cc').value.trim();
+    const item = document.getElementById('item').value.trim();
+
+    let dataToCopy = '';
+
+    if (fornecedor) {
+        dataToCopy += `Forn: ${fornecedor} | `;
+    }
+    if (cnpj) {
+        dataToCopy += `CNPJ: ${cnpj} | `;
+    }
+    if (valorUnit) {
+        dataToCopy += `Valor Unit: R$ ${valorUnit} | `;
+    }
+    if (qtd) {
+        dataToCopy += `Qtd: ${qtd} | `;
+    }
+    if (valorTotal) {
+        dataToCopy += `Total: R$${valorTotal} | `;
+    }
+    if (cc) {
+        dataToCopy += `CC: ${cc} | `;
+    }
+    if (item) {
+        dataToCopy += `Item: ${item}`;
+    }
+
+    const format = document.getElementById('textFormat').value;
+
+    if (format === 'uppercase') {
+        dataToCopy = dataToCopy.toUpperCase();
+    } else if (format === 'lowercase') {
+        dataToCopy = dataToCopy.toLowerCase();
+    } else if (format === 'capitalize') {
+        dataToCopy = dataToCopy.replace(/\b\w/g, char => char.toUpperCase());
+    }
+
+    const copyText = document.querySelector('.copy-text');
+    copyText.value = dataToCopy;
+    copyText.select();
+    document.execCommand('copy');
+
+    if (dataToCopy) {
+        const copiedTextDiv = document.createElement('div');
+        copiedTextDiv.className = 'copied-text';
+        copiedTextDiv.textContent = dataToCopy;
+
+        // Create copy button
+        const copyButton = document.createElement('button');
+        copyButton.textContent = '馃攧'; // Button symbol
+        copyButton.onclick = () => {
+            copyToClipboardForDiv(copiedTextDiv);
+        };
+
+        copiedTextDiv.appendChild(copyButton);
+        document.getElementById('copiedText').appendChild(copiedTextDiv);
+    } else {
+        alert('Preencha pelo menos um campo para copiar.');
+    }
+}
+
+//FIM DA FUNCAO COPY TO CLIPBOARD 
+        
+        function clearFields() {
+            document.getElementById('fornecedor').value = '';
+            document.getElementById('cnpj').value = '';
+            document.getElementById('valor_unit').value = '';
+            document.getElementById('qtd').value = '';
+            document.getElementById('valor_total').value = '';
+            document.getElementById('cc').value = '';
+            document.getElementById('item').value = '';
+            // Limpa e esconde mensagens do CNPJ
+    document.getElementById('cnpj-error').style.display = 'none';
+    document.getElementById('cnpj-valid').style.display = 'none';
+
+
+        }
+
+        function setTheme(theme) {
+            document.body.className = theme + '-theme';
+        }
+
+        window.onload = function() {
+            setTheme('dark');
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const formFields = [
+                'fornecedor',
+                'cnpj',
+                'valor_unit',
+                'qtd',
+                'cc',
+                'item'
+            ];
+
+            formFields.forEach((fieldId, index) => {
+                const field = document.getElementById(fieldId);
+                field.addEventListener('keydown', function(event) {
+                    if (event.key === 'Enter') {
+                        event.preventDefault();
+                        const nextFieldId = formFields[(index + 1) % formFields.length];
+                        document.getElementById(nextFieldId).focus();
+                    }
+                });
+            });
+        });
+
+        function showSuggestions(value) {
+            const suggestions = document.getElementById('suggestions');
+            suggestions.innerHTML = '';
+
+            if (value) {
+                const filteredLCCs = lccs.filter(lcc => 
+                    lcc.toLowerCase().includes(value.toLowerCase())
+                );
+                filteredLCCs.forEach(lcc => {
+                    const div = document.createElement('div');
+                    div.classList.add('suggestion');
+                    div.textContent = lcc;
+                    div.onclick = () => selectSuggestion(lcc);
+                    suggestions.appendChild(div);
+                });
+            }
+        }
+
+        function selectSuggestion(lcc) {
+            const cc = document.getElementById('cc');
+            cc.value = lcc + ' ';
+            document.getElementById('suggestions').innerHTML = '';
+        }
+        
+        function copyText() {
+           var copyText = document.querySelector('.copy-text');
+            copyText.value = datatocopy;
+            copyText.select();
+            document.execCommand('copy');
+        }
+        
+    
+    
+    function clearHistory() {
+    const copiedTextDiv = document.getElementById('copiedText');
+    copiedTextDiv.innerHTML = '';
+}
+
+        
+        
+        
+        function copyToClipboardForDiv(div) {
+    // Obt茅m apenas o texto da div, excluindo o conte煤do dos elementos filhos
+    const text = div.firstChild.textContent.trim();
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+}
+        
+        
+    
+    
+    
+    
+    function getFormattedDateTime() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    return `${year}${month}${day} ${hours}${minutes}${seconds}`;
+}
+
+function exportToTxt() {
+    const copiedTextDivs = document.querySelectorAll('#copiedText .copied-text');
+    let data = '';
+
+    copiedTextDivs.forEach(div => {
+        const text = div.firstChild.textContent.trim();
+        data += text + '\n';
+    });
+
+    const formattedDateTime = getFormattedDateTime();
+    const blob = new Blob([data], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `SC ${formattedDateTime}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+function exportToXml() {
+    const copiedTextDivs = document.querySelectorAll('#copiedText .copied-text');
+    let xmlData = '<?xml version="1.0" encoding="UTF-8"?>\n<dados>\n';
+
+    copiedTextDivs.forEach(div => {
+        const text = div.firstChild.textContent.trim();
+        const dataEntries = text.split(' | ');
+
+        xmlData += '  <entry>\n';
+        dataEntries.forEach(entry => {
+            const [label, value] = entry.split(': ');
+            const tag = label.split(' ').pop();
+            xmlData += `    <${tag}>${escapeXml(value)}</${tag}>\n`;
+        });
+        xmlData += '  </entry>\n';
+    });
+
+    xmlData += '</dados>';
+
+    const formattedDateTime = getFormattedDateTime();
+    const blob = new Blob([xmlData], { type: 'application/xml' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `SC ${formattedDateTime}.xml`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+function escapeXml(unsafe) {
+    return unsafe.replace(/[<>&'"]/g, function (c) {
+        switch (c) {
+            case '<': return '&lt;';
+            case '>': return '&gt;';
+            case '&': return '&amp;';
+            case '\'': return '&apos;';
+            case '"': return '&quot;';
+            default: return c;
+        }
+    });
+}
+
+function importTxt() {
+    const fileInput = document.getElementById('fileInput');
+    fileInput.accept = '.txt';
+    fileInput.click();
+}
+
+function importXml() {
+    const fileInput = document.getElementById('fileInput');
+    fileInput.accept = '.xml';
+    fileInput.click();
+}
+
+function handleFileSelect(event) {
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const contents = e.target.result;
+            console.log('File contents:', contents); // Log para debugging
+            if (file.type === 'text/plain' || file.name.endsWith('.txt')) {
+                importTxtContents(contents);
+            } else if (file.type === 'application/xml' || file.name.endsWith('.xml')) {
+                importXmlContents(contents);
+            } else {
+                alert('Formato de arquivo não suportado. Por favor, carregue um arquivo .txt ou .xml.');
+            }
+        };
+        reader.readAsText(file);
+    }
+}
+
+function importTxtContents(contents) {
+    const copiedTextDiv = document.getElementById('copiedText');
+    const entries = contents.trim().split('\n');
+    entries.forEach(entry => {
+        const div = document.createElement('div');
+        div.className = 'copied-text';
+        div.textContent = entry;
+
+        const copyButton = document.createElement('button');
+        copyButton.textContent = '馃攧'; // Símbolo do botão
+        copyButton.onclick = () => {
+            copyToClipboardForDiv(div);
+        };
+
+        div.appendChild(copyButton);
+        copiedTextDiv.appendChild(div);
+    });
+}
+
+function importXmlContents(contents) {
+    try {
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(contents, 'application/xml');
+        const parseError = xmlDoc.getElementsByTagName('parsererror');
+
+        if (parseError.length > 0) {
+            throw new Error('Erro ao parsear o XML.');
+        }
+
+        const entries = xmlDoc.getElementsByTagName('entry');
+        const copiedTextDiv = document.getElementById('copiedText');
+        copiedTextDiv.innerHTML = ''; // Limpa o conteúdo anterior
+
+        for (let i = 0; i < entries.length; i++) {
+            const entry = entries[i];
+            let text = '';
+
+            const children = entry.children;
+            for (let j = 0; j < children.length; j++) {
+                const child = children[j];
+                text += `${child.nodeName}: ${child.textContent} | `;
+            }
+
+            text = text.slice(0, -3); // Remove o último ' | '
+
+            const div = document.createElement('div');
+            div.className = 'copied-text';
+            div.textContent = text;
+
+            const copyButton = document.createElement('button');
+            copyButton.textContent = '馃攧'; // Símbolo do botão
+            copyButton.onclick = () => {
+                copyToClipboardForDiv(div);
+            };
+
+            div.appendChild(copyButton);
+            copiedTextDiv.appendChild(div);
+        }
+    } catch (error) {
+        console.error('Erro ao importar XML:', error);
+        alert('Ocorreu um erro ao importar o XML. Verifique a estrutura do arquivo e tente novamente.');
+    }
+}
+    
+
+    </script>
+</body>
+</html>
