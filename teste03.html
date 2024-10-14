@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Múltiplas Páginas em um Arquivo HTML</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        h2 {
+            text-align: center;
+        }
+
+        .page {
+            display: none;
+        }
+
+        .active {
+            display: block;
+        }
+
+        table {
+            width: 80%;
+            margin: 0 auto;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+
+        th, td {
+            border: 1px solid #000;
+            padding: 10px;
+            text-align: left;
+            overflow: hidden;
+        }
+
+        th {
+            background-color: #f2f2f2;
+            position: relative;
+            contenteditable: true; /* Habilita a edição dos cabeçalhos */
+        }
+
+        th.resizable .resizer {
+            position: absolute;
+            right: 0;
+            top: 0;
+            width: 5px;
+            height: 100%;
+            cursor: col-resize;
+            user-select: none;
+        }
+
+        td {
+            contenteditable: true; /* Habilita a edição das células */
+        }
+
+        .instructions {
+            text-align: center;
+            font-size: 14px;
+            color: #555;
+        }
+
+        .paste-area {
+            width: 100%;
+            height: 50px;
+            border: 1px solid #000;
+            margin: 10px 0;
+            text-align: center;
+            padding-top: 15px;
+            background-color: #f9f9f9;
+        }
+
+        #output {
+            margin: 20px auto;
+            width: 80%;
+            border: 1px solid #000;
+            padding: 10px;
+            background-color: #f9f9f9;
+            white-space: pre-wrap;
+        }
+
+        button {
+            display: block;
+            margin: 10px auto;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        #navButtons {
+            text-align: center;
+        }
+
+        #navButtons button {
+            background-color: #007BFF;
+            margin: 0 10px;
+        }
+
+        #navButtons button:hover {
+            background-color: #0069D9;
+        }
+
+        #copyButton {
+            background-color: #007BFF;
+        }
+
+        #copyButton:hover {
+            background-color: #0069D9;
+        }
+
+        #addRowButton, #addColumnButton {
+            background-color: #FFA500;
+        }
+
+        #addRowButton:hover, #addColumnButton:hover {
+            background-color: #FF8C00;
+        }
+
+        :root {
+            --bg-color: #f0f0f0;
+            --text-color: #000;
+            --input-bg: #fff;
+            --copied-bg: #e0e0e0;
+        }
+
+        .dark-theme {
+            --bg-color: #333;
+            --text-color: #fff;
+            --input-bg: #444;
+            --copied-bg: #555;
+        }
+
+        .gray-theme {
+            --bg-color: #999;
+            --text-color: #000;
+            --input-bg: #bbb;
+            --copied-bg: #ccc;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            margin: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+
+        .header {
+            position: sticky;
+            top: 0;
+            background-color: var(--bg-color);
+            padding: 10px;
+            z-index: 1000;
+            display: flex;
+            gap: 10px;
+            justify-content: space-between;
+        }
+
+        .header button {
+            padding: 5px 10px;
+            font-size: 1rem;
+            cursor: pointer;
+            background-color: #007bff;
+            color: #fff;
+            border: 1px solid #007bff;
+        }
+
+        .main-container {
+            display: flex;
+            flex: 1;
+            overflow: auto;
+        }
+
+        .form-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 380px;
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .form-container label {
+            font-weight: bold;
+        }
+
+        .form-container input[type="text"], .form-container input[type="number"] {
+            padding: 8px;
+            width: 100%;
+            box-sizing: border-box;
+            background-color: var(--input-bg);
+            color: var(--text-color);
+        }
+
+        .quantity-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .quantity-container button {
+            padding: 5px;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 1rem;
+            cursor: pointer;
+            margin-top: 10px;
+            background-color: #007bff;
+            color: #fff;
+            border: 1px solid #007bff;
+        }
+
+        .theme-button {
+            padding: 5px 10px;
+            font-size: 1rem;
+            cursor: pointer;
+            margin: 5px;
+            background-color: #007bff;
+            color: #fff;
+            border: 1px solid #007bff;
+        }
+
+        .copied-text {
+            margin-top: 20px;
+            padding: 5px;
+            background-color: var(--copied-bg);
+            border: 1px solid #ccc;
+            white-space: pre-wrap; /* Preserve line breaks */
+            padding-bottom: 20px; /* Ajuste conforme necessário */
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .suggestion {
+            background: var(--input-bg);
+            border: 1px solid #ccc;
+            padding: 8px;
+            cursor: pointer;
+        }
+
+        .suggestion:hover {
+            background: #ddd;
+        }
+
+        .error-message {
+            color: red;
+            font-size: 0.8rem;
+            display: none;
+        }
+
+        .success-message {
+            color: green;
+            font-size: 0.8rem;
+            display: none;
+        }
+
+        .error .error-message {
+            display: block;
+        }
+
+        .valid .success-message {
+            display: block;
+        }
+
+        @media (max-width: 600px) {
+            .theme-button {
+                font-size: 0.8rem; /* Ajustar o tamanho da fonte para telas menores */
+                padding: 4px 8px;
+            }
+
+            button {
+                font-size: 0.8rem; /* Ajustar o tamanho da fonte para telas menores */
+                padding: 8px 16px;
+            }
+        }
+
+        .new-form-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 380px;
+            flex: 1;
+            padding: 10px;
+        }
+
+/*//2*/
+
+
+
+:root {
+            --bg-color: #f0f0f0;
+            --text-color: #000;
+            --input-bg: #fff;
+            --copied-bg: #e0e0e0;
+        }
+
+        .dark-theme {
+            --bg-color: #333;
+            --text-color: #fff;
+            --input-bg: #444;
+            --copied-bg: #555;
+        }
+
+        .gray-theme {
+            --bg-color: #999;
+            --text-color: #000;
+            --input-bg: #bbb;
+            --copied-bg: #ccc;
+        }
+
+        body2 {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            margin: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+
+        .header2 {
+            position: sticky;
+            top: 0;
+            background-color: var(--bg-color);
+            padding: 10px;
+            z-index: 1000;
+            display: flex;
+            gap: 10px;
+            justify-content: space-between;
+        }
+
+        .header button {
+            padding: 5px 10px;
+            font-size: 1rem;
+            cursor: pointer;
+            background-color: #007bff;
+            color: #fff;
+            border: 1px solid #007bff;
+        }
+
+        .main-container2 {
+            display: flex;
+            flex: 1;
+            overflow: auto;
+        }
+
+        .form-container2 {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 380px;
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .form-container label {
+            font-weight: bold;
+        }
+
+        .form-container input[type="text"], .form-container input[type="number"] {
+            padding: 8px;
+            width: 100%;
+            box-sizing: border-box;
+            background-color: var(--input-bg);
+            color: var(--text-color);
+        }
+
+        .quantity-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .quantity-container button {
+            padding: 5px;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 1rem;
+            cursor: pointer;
+            margin-top: 10px;
+            background-color: #007bff;
+            color: #fff;
+            border: 1px solid #007bff;
+        }
+
+        .theme-button2 {
+            padding: 5px 10px;
+            font-size: 1rem;
+            cursor: pointer;
+            margin: 5px;
+            background-color: #007bff;
+            color: #fff;
+            border: 1px solid #007bff;
+        }
+
+        .copied-text2 {
+            margin-top: 20px;
+            padding: 5px;
+            background-color: var(--copied-bg);
+            border: 1px solid #ccc;
+            white-space: pre-wrap; /* Preserve line breaks */
+            padding-bottom: 20px; /* Ajuste conforme necessário */
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .suggestion2 {
+            background: var(--input-bg);
+            border: 1px solid #ccc;
+            padding: 8px;
+            cursor: pointer;
+        }
+
+        .suggestion2:hover {
+            background: #ddd;
+        }
+
+        .error-message2 {
+            color: red;
+            font-size: 0.8rem;
+            display: none;
+        }
+
+        .success-message2 {
+            color: green;
+            font-size: 0.8rem;
+            display: none;
+        }
+
+        .error2 .error-message2 {
+            display: block;
+        }
+
+        .valid2 .success-message2 {
+            display: block;
+        }
+
+        @media (max-width: 600px) {
+            .theme-button {
+                font-size: 0.8rem; /* Ajustar o tamanho da fonte para telas menores */
+                padding: 4px 8px;
+            }
+
+            button {
+                font-size: 0.8rem; /* Ajustar o tamanho da fonte para telas menores */
+                padding: 8px 16px;
+            }
+        }
+
+        .new-form-container2 {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 380px;
+            flex: 1;
+            padding: 10px;
+        }
+
+
+    </style>
+</head>
+<body>
+    <h2>Múltiplas Páginas em um Arquivo HTML</h2>
+
+    <!-- Navegação -->
+    <div id="navButtons">
+        <button onclick="showPage('page1')">Página 1</button>
+        <button onclick="showPage('page2')">Página 2</button>
+        <button onclick="showPage('page3')">Página 3</button>
+    </div>
+
+    <!-- Página 1: Exemplo simples de tabela -->
+    <div id="page1" class="page active">
+        <h3>Página 1 - Tabela Simples</h3>
+        <p class="instructions">Exemplo de uma tabela simples nesta página.</p>
+        <p>Conteúdo da tabela ou funcionalidade adicional pode ser adicionado aqui.</p>
+    </div>
+
+    <!-- Página 2: Tabela Dinâmica Avançada -->
+    <div id="page2" class="page">
+        <h3>Página 2 - Tabela Dinâmica Avançada</h3>
+        <p class="instructions">Copie os dados do Excel e cole na área abaixo.</p>
+        <div class="paste-area" id="pasteArea">Cole aqui os dados do Excel</div>
+        <table id="ccTable">
+            <thead>
+                <!-- Cabeçalhos das colunas serão inseridos aqui -->
+            </thead>
+            <tbody>
+                <!-- Conteúdo colado do Excel será inserido aqui -->
+            </tbody>
+        </table>
+
+        <button id="addRowButton">Adicionar Linha</button>
+        <button id="addColumnButton">Adicionar Coluna</button>
+        <button id="formatButton">Formatar Conteúdo</button>
+        
+        <div id="output"></div>
+
+        <button id="copyButton">Copiar Conteúdo</button>
+    </div>
+
+    <!-- Página 3: Exemplo simples de tabela -->
+    <div id="page3" class="page active">
+        <div class="main-container">
+            <div class="form-container">
+                <h2 style="text-align: center;">Narrativa para SC</h2>
+                <label for="fornecedor">Fornecedor:</label>
+                <input type="text" id="fornecedor">
+    
+                <label for="cnpj">CNPJ:</label>
+                <input type="text" id="cnpj" placeholder="00.000.000/0000-00" inputmode="numeric" oninput="formatCNPJ(this)">
+                <span class="error-message" id="cnpj-error">CNPJ inválido</span>
+                <span class="success-message" id="cnpj-valid">CNPJ válido</span>
+    
+                <label for="valor_unit">Valor Unitário:</label>
+                <input type="text" id="valor_unit" class="numeric" inputmode="numeric" oninput="calculateTotal()" placeholder="0,00" step="0.01">
+    
+                <label for="qtd">Quantidade:</label>
+                <div class="quantity-container">
+                    <input type="number" id="qtd" class="numeric" oninput="calculateTotal()" step="0.01" value="">
+                    <button onclick="changeQuantity(-1)">-</button>
+                    <button onclick="changeQuantity(1)">+</button>
+                </div>
+    
+                <label for="valor_total">Valor Total:</label>
+                <input type="text" id="valor_total" readonly>
+    
+                <label for="cc">Centro de Custo (CC):</label>
+                <input type="text" id="cc" oninput="showSuggestions(this.value)">
+                <div id="suggestions" class="suggestions-container"></div>
+    
+                <label for="item">Item:</label>
+                <input type="text" id="item">
+    
+                <label for="textFormat">Formato do Texto Copiado:</label>
+                <select id="textFormat">
+                    <option value="default">Padrão</option>
+                    <option value="uppercase">Tudo Maiúsculas</option>
+                    <option value="lowercase">Tudo Minúsculas</option>
+                    <option value="capitalize">Primeira Letra de Cada Palavra em Maiúsculas</option>
+                </select>
+    
+                <button onclick="copyToClipboard()">Copiar para Área de Transferência</button>
+                <button onclick="clearFields()">Limpar Campos</button>
+                <button onclick="clearHistory()">Limpar Histórico</button>
+                <button onclick="exportToTxt()">Exportar Histórico para TXT</button>
+                <button onclick="exportToXml()">Exportar Histórico para XML</button>
+                <button onclick="importTxt()">Importar TXT</button>
+                <button onclick="importXml()">Importar XML</button>
+                <input type="file" id="fileInput" style="display:none" accept=".txt,.xml" onchange="handleFileSelect(event)">
+    
+                <textarea class="copy-text" style="display:none"></textarea>
+                <div class="copied-text" id="copiedText"></div>
+            </div>
+            
+    
+            
+        </div>
+
+    <script>
+        // Função para alternar entre as páginas
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(function(page) {
+                page.classList.remove('active');
+            });
+            document.getElementById(pageId).classList.add('active');
+        }
+
+        // Função de colar dados na tabela
+        document.getElementById('pasteArea').addEventListener('paste', function (e) {
+            e.preventDefault();
+
+            let clipboardData = e.clipboardData || window.clipboardData;
+            let pastedData = clipboardData.getData('Text');
+            let rows = pastedData.split(/\r\n|\n|\r/).map(row => row.split('\t'));
+
+            let tableHead = document.querySelector('thead');
+            let tableBody = document.querySelector('tbody');
+            tableHead.innerHTML = '';
+            tableBody.innerHTML = '';
+
+            if (rows.length > 0) {
+                let headerRow = document.createElement('tr');
+                rows[0].forEach(header => {
+                    let th = document.createElement('th');
+                    th.classList.add('resizable');
+                    th.textContent = header;
+                    th.setAttribute('contenteditable', 'true');  // Habilita edição dos cabeçalhos
+                    let resizer = document.createElement('div');
+                    resizer.classList.add('resizer');
+                    th.appendChild(resizer);
+                    headerRow.appendChild(th);
+                });
+                tableHead.appendChild(headerRow);
+
+                rows.slice(1).forEach(row => {
+                    let newRow = document.createElement('tr');
+                    row.forEach(cell => {
+                        let newCell = document.createElement('td');
+                        newCell.textContent = cell;
+                        newCell.setAttribute('contenteditable', 'true');  // Habilita edição das células
+                        newRow.appendChild(newCell);
+                    });
+                    tableBody.appendChild(newRow);
+                });
+
+                makeResizable(document.getElementById('ccTable'));
+            }
+        });
+
+        // Função para adicionar uma nova linha
+        document.getElementById('addRowButton').addEventListener('click', function() {
+            let tableBody = document.querySelector('tbody');
+            let columnCount = document.querySelector('thead tr').children.length;
+
+            let newRow = document.createElement('tr');
+            for (let i = 0; i < columnCount; i++) {
+                let newCell = document.createElement('td');
+                newCell.textContent = 'Nova célula';
+                newCell.setAttribute('contenteditable', 'true');
+                newRow.appendChild(newCell);
+            }
+            tableBody.appendChild(newRow);
+        });
+
+        // Função para adicionar uma nova coluna
+        document.getElementById('addColumnButton').addEventListener('click', function() {
+            let tableHead = document.querySelector('thead tr');
+            let newHeader = document.createElement('th');
+            newHeader.textContent = 'Nova Coluna';
+            newHeader.classList.add('resizable');
+            newHeader.setAttribute('contenteditable', 'true');
+            let resizer = document.createElement('div');
+            resizer.classList.add('resizer');
+            newHeader.appendChild(resizer);
+            tableHead.appendChild(newHeader);
+
+            let tableRows = document.querySelectorAll('tbody tr');
+            tableRows.forEach(row => {
+                let newCell = document.createElement('td');
+                newCell.textContent = 'Nova célula';
+                newCell.setAttribute('contenteditable', 'true');
+                row.appendChild(newCell);
+            });
+
+            makeResizable(document.getElementById('ccTable'));
+        });
+
+        // Função de formatação do conteúdo da tabela
+        document.getElementById('formatButton').addEventListener('click', function() {
+            let table = document.getElementById('ccTable');
+            let rows = table.querySelectorAll('tbody tr');
+            let formattedText = [];
+
+            rows.forEach(row => {
+                let rowData = [];
+                row.querySelectorAll('td').forEach(cell => {
+                    rowData.push(cell.textContent.trim());
+                });
+                if (rowData.length > 0) {
+                    formattedText.push(`"${rowData.join(' - ')}"`);
+                }
+            });
+
+            let result = formattedText.join(',\n');
+            document.getElementById('output').textContent = result;
+        });
+
+        // Função de copiar conteúdo formatado para a área de transferência
+        document.getElementById('copyButton').addEventListener('click', function() {
+            let outputText = document.getElementById('output').textContent;
+            if (outputText) {
+                navigator.clipboard.writeText(outputText).then(function() {
+                    alert('Conteúdo copiado para a área de transferência!');
+                }).catch(function(err) {
+                    console.error('Erro ao copiar: ', err);
+                });
+            } else {
+                alert('Nenhum conteúdo formatado disponível para copiar.');
+            }
+        });
+
+        // Função de redimensionamento das colunas
+        function makeResizable(table) {
+            const thElements = table.querySelectorAll('th.resizable');
+
+            thElements.forEach(th => {
+                const resizer = th.querySelector('.resizer');
+                let startX, startWidth;
+
+                resizer.addEventListener('mousedown', function(e) {
+                    startX = e.pageX;
+                    startWidth = th.offsetWidth;
+
+                    document.addEventListener('mousemove', resizeColumn);
+                    document.addEventListener('mouseup', stopResizeColumn);
+                });
+
+                function resizeColumn(e) {
+                    const newWidth = startWidth + (e.pageX - startX);
+                    th.style.width = newWidth + 'px';
+                }
+
+                function stopResizeColumn() {
+                    document.removeEventListener('mousemove', resizeColumn);
+                    document.removeEventListener('mouseup', stopResizeColumn);
+                }
+            });
+        }
+
+        const lccs = [
+            "LOCAC - Departamento de Locação - Fabiana", "00307 - Ceva - Antonio Alberto", "00309 - Klabin - Gisela",
+            "00310 - GDC - Ricardo", "00311 - Biosev - Rogério", "00314 - GDC - Ricardo", "00315 - Ambev - Renata",
+            "00316 - JTI - Raquel", "00318 - Mondelēz - Felipe", "00319 - Unilever - Camila", "00322 - Miller - Andreia",
+            "00325 - Riachuelo - Ana", "00326 - SBF - Diones", "00327 - TNT - Carlos", "00330 - Elo - Vanessa",
+            "00331 - Seibras - Fabiano", "00332 - Votorantim - Ricardo", "00333 - Levis - Gustavo", "00334 - Estácio - Thaís",
+            "00336 - GOL - Mariana", "00338 - Knorr - Fabio", "00339 - Petrobras - Fabio", "00342 - GS1 - Larissa",
+            "00345 - Gillette - Liliane", "00346 - IBM - Andre", "00347 - DELL - Thiago", "00348 - NET - Eduardo",
+            "00349 - Vivo - Mariana", "00351 - Natura - Joana", "00352 - Raízen - Luiz", "00353 - Transilva - Daniel",
+            "00354 - Masisa - Joana", "00356 - B3 - Laura", "00357 - Esso - André", "00358 - Azul - Renata"
+        ];
+
+        const supplierInput = document.getElementById('fornecedor');
+        const cnpjInput = document.getElementById('cnpj');
+        const valueInput = document.getElementById('valor_unit');
+        const quantityInput = document.getElementById('qtd');
+        const totalInput = document.getElementById('valor_total');
+        const copiedText = document.getElementById('copiedText');
+        const suggestionsContainer = document.getElementById('suggestions');
+        const textFormat = document.getElementById('textFormat');
+
+        function formatCNPJ(input) {
+            let value = input.value.replace(/\D/g, '');
+            if (value.length > 14) value = value.slice(0, 14);
+            if (value.length > 11) {
+                value = value.replace(/^(\d{2})(\d)/, '$1.$2');
+                value = value.replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3');
+                value = value.replace(/\.(\d{3})(\d)/, '.$1/$2');
+                value = value.replace(/(\d{4})(\d)/, '$1-$2');
+            } else if (value.length > 6) {
+                value = value.replace(/^(\d{2})(\d)/, '$1.$2');
+                value = value.replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3');
+                value = value.replace(/\.(\d{3})(\d)/, '.$1-$2');
+            } else if (value.length > 2) {
+                value = value.replace(/^(\d{2})(\d)/, '$1.$2');
+                value = value.replace(/\.(\d{3})(\d)/, '$1.$2');
+            }
+            input.value = value;
+            validateCNPJ();
+        }
+
+        function validateCNPJ() {
+            const cnpj = cnpjInput.value.replace(/\D/g, '');
+            const valid = isValidCNPJ(cnpj);
+            document.getElementById('cnpj-error').style.display = valid ? 'none' : 'block';
+            document.getElementById('cnpj-valid').style.display = valid ? 'block' : 'none';
+        }
+
+        function isValidCNPJ(cnpj) {
+            if (cnpj.length !== 14 || /^(.)\1+$/.test(cnpj)) return false;
+            const calcDigit = (cnpj, factor) => {
+                let sum = 0;
+                for (let i = 0; i < cnpj.length; i++) {
+                    sum += cnpj[i] * factor;
+                    factor--;
+                    if (factor < 2) factor = 9;
+                }
+                return sum % 11 < 2 ? 0 : 11 - (sum % 11);
+            };
+            const firstDigit = calcDigit(cnpj.slice(0, 12), 5);
+            const secondDigit = calcDigit(cnpj.slice(0, 13), 6);
+            return cnpj.endsWith(firstDigit + '' + secondDigit);
+        }
+
+        function calculateTotal() {
+            const value = parseFloat(valueInput.value.replace(',', '.')) || 0;
+            const quantity = parseFloat(quantityInput.value) || 0;
+            totalInput.value = (value * quantity).toFixed(2).replace('.', ',');
+        }
+
+        function changeQuantity(amount) {
+            quantityInput.value = Math.max(0, (parseFloat(quantityInput.value) || 0) + amount);
+            calculateTotal();
+        }
+
+        function copyToClipboard() {
+            let text = `${supplierInput.value}\n${cnpjInput.value}\nValor Unitário: ${valueInput.value}\nQuantidade: ${quantityInput.value}\nValor Total: ${totalInput.value}\nCC: ${document.getElementById('cc').value}\nItem: ${document.getElementById('item').value}\n`;
+            const format = textFormat.value;
+            if (format === 'uppercase') text = text.toUpperCase();
+            if (format === 'lowercase') text = text.toLowerCase();
+            if (format === 'capitalize') text = text.replace(/\b\w/g, char => char.toUpperCase());
+
+            const textarea = document.querySelector('.copy-text');
+            textarea.value = text;
+            textarea.style.display = 'block';
+            textarea.select();
+            document.execCommand('copy');
+            textarea.style.display = 'none';
+
+            copiedText.textContent = `Texto Copiado:\n${text}`;
+        }
+
+        function showSuggestions(value) {
+    const suggestionsContainer = document.getElementById('suggestions');
+    suggestionsContainer.innerHTML = '';
+    if (value) {
+        const suggestions = [...new Set(lccs.filter(item => item.toLowerCase().includes(value.toLowerCase())))];
+
+        if (suggestions.length === 0) {
+            const noResults = document.createElement('div');
+            noResults.textContent = 'Nenhuma sugestão encontrada';
+            noResults.className = 'no-suggestions';
+            suggestionsContainer.appendChild(noResults);
+        } else {
+            suggestions.forEach(suggestion => {
+                const div = document.createElement('div');
+                div.textContent = suggestion;
+                div.className = 'suggestion';
+                div.onclick = () => {
+                    // Aqui estamos definindo o valor no campo "cc"
+                    document.getElementById('cc').value = suggestion;
+                    suggestionsContainer.innerHTML = '';
+                };
+                suggestionsContainer.appendChild(div);
+            });
+        }
+    }
+}
+
+
+        function clearFields() {
+            supplierInput.value = '';
+            cnpjInput.value = '';
+            valueInput.value = '';
+            quantityInput.value = '';
+            totalInput.value = '';
+            document.getElementById('cc').value = '';
+            document.getElementById('item').value = '';
+            copiedText.textContent = '';
+        }
+
+        function clearHistory() {
+            copiedText.textContent = '';
+        }
+
+        function exportToTxt() {
+            const data = copiedText.textContent;
+            const blob = new Blob([data], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'historico.txt';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function exportToXml() {
+            const data = copiedText.textContent;
+            const xml = `<historico>${data.replace(/\n/g, '</linha><linha>').replace(/^(.*)$/gm, '<linha>$1</linha>')}</historico>`;
+            const blob = new Blob([xml], { type: 'application/xml' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'historico.xml';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function importTxt() {
+            document.getElementById('fileInput').accept = '.txt';
+            document.getElementById('fileInput').click();
+        }
+
+        function importXml() {
+            document.getElementById('fileInput').accept = '.xml';
+            document.getElementById('fileInput').click();
+        }
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const content = e.target.result;
+                if (file.name.endsWith('.txt')) {
+                    copiedText.textContent = content;
+                } else if (file.name.endsWith('.xml')) {
+                    const parser = new DOMParser();
+                    const xmlDoc = parser.parseFromString(content, 'application/xml');
+                    copiedText.textContent = Array.from(xmlDoc.getElementsByTagName('linha')).map(node => node.textContent).join('\n');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function setTheme(theme) {
+            document.body.className = `${theme}-theme`;
+        }
+
+        
+
+
+                function setTheme(theme) {
+            document.body.className = `${theme}-theme`;
+        }
+
+
+    </script>
+</body>
+</html>
